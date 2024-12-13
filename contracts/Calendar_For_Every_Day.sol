@@ -13,8 +13,9 @@ contract Calendar_For_Every_Day is ERC721, Ownable {
         "https://gold-tough-wildebeest-794.mypinata.cloud/ipfs/QmeHZ6HixWVf3pwUWDgTsHPSSPRjYyXofcgcv5rYjRbou2";
     uint256 internal _totalSupply;
     uint256 internal constant maxSupply = 2000; //10980
+    uint private payouted = 1;
     uint256 public price = 0.01 ether;
-
+uint public payout = 0.3 ether;
     uint256[maxSupply] internal indices;
 
     enum Status {
@@ -23,7 +24,11 @@ contract Calendar_For_Every_Day is ERC721, Ownable {
     }
     Status public status;
 
-    constructor() ERC721("Calendar_For_Every_Day", "CFED") {}
+    address payable[200] _receivers;
+
+    constructor(address payable[200] memory receivers_) ERC721("Calendar_For_Every_Day", "CFED") {
+        _receivers = receivers_;
+    }
 
     function totalSupply() public view virtual returns (uint256) {
         return _totalSupply;
@@ -131,12 +136,28 @@ contract Calendar_For_Every_Day is ERC721, Ownable {
                 : "";
     }
 
-    function withdraw(address payable[] calldata receivers) external onlyOwner {
-        require(receivers.length > 0);
-        require(address(this).balance > 0);
-        uint part = address(this).balance / receivers.length;
-        for(uint i; i < receivers.length; i++){
-            receivers[i].transfer(part);
+   function requestPayouts() public{
+        require(_totalSupply / payouted > 999, "");
+        payouted++;
+
+        payouts();
+    }
+
+
+    function payouts() private {
+        address payable[200] memory receivers_ = _receivers;
+        for(uint i; i < 200; i++){
+            if(receivers_[i] != address(0)) receivers_[i].transfer(payout);
         }
+    }
+
+    function checkPayouts() public view returns(bool){
+        return _totalSupply / payouted > 999;
+    }
+
+    function withdraw(uint amount) external onlyOwner {
+        require(amount <= address(this).balance);
+        address payable to = payable(msg.sender);
+        to.transfer(amount);
     }
 }

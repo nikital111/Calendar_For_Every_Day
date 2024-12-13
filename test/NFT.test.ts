@@ -5,6 +5,7 @@ import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { Calendar_For_Every_Day } from "../typechain-types/contracts";
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+import addresses from "./addresses.json";
 
 describe("NFT", function () {
   async function deployNFTFixture() {
@@ -14,7 +15,7 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy();
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
 
     await nft.deployed();
 
@@ -30,7 +31,7 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy();
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
 
     await nft.deployed();
 
@@ -48,7 +49,7 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy();
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
 
     await nft.deployed();
 
@@ -67,7 +68,7 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy();
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
 
     await nft.deployed();
 
@@ -90,7 +91,7 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy();
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
 
     await nft.deployed();
 
@@ -187,9 +188,11 @@ describe("NFT", function () {
     const totalSupplyBefore = await nft.totalSupply();
     const numToMint = 30;
 
-    const mintTx = await nft.connect(otherAccount).safeMint(otherAccount.address, numToMint, {
-      value: price.mul(numToMint),
-    });
+    const mintTx = await nft
+      .connect(otherAccount)
+      .safeMint(otherAccount.address, numToMint, {
+        value: price.mul(numToMint),
+      });
 
     await expect(mintTx).to.emit(nft, "Transfer");
 
@@ -207,13 +210,17 @@ describe("NFT", function () {
     //reverts
 
     await expect(
-      nft.connect(otherAccount).safeMint(otherAccount.address, 1, { value: price.sub(1) })
+      nft
+        .connect(otherAccount)
+        .safeMint(otherAccount.address, 1, { value: price.sub(1) })
     ).to.be.revertedWith("Wrong amount");
 
     await nft.changePrice(ethers.utils.parseEther("2"));
 
     await expect(
-      nft.connect(otherAccount).safeMint(otherAccount.address, 1, { value: price })
+      nft
+        .connect(otherAccount)
+        .safeMint(otherAccount.address, 1, { value: price })
     ).to.be.revertedWith("Wrong amount");
 
     await nft.changePrice(ethers.utils.parseEther("1"));
@@ -228,32 +235,27 @@ describe("NFT", function () {
     const { nft, owner, price, otherAccount, count } = await loadFixture(
       deployNFTFixtureMINTED
     );
-    const receivers = [owner.address,otherAccount.address];
+    const receivers = [owner.address, otherAccount.address];
     const balance = await ethers.provider.getBalance(nft.address);
 
     expect(balance).to.eq(price.mul(count));
 
-    const withdraw = await nft.withdraw(receivers);
+    const withdraw = await nft.withdraw(1);
 
     await expect(withdraw).to.changeEtherBalances(
       [nft.address, owner.address],
-      [price.mul(-count), price.mul(count).div(2)]
-    );
-
-    await expect(withdraw).to.changeEtherBalances(
-      [nft.address, otherAccount.address],
-      [price.mul(-count), price.mul(count).div(2)]
+      [-1, 1]
     );
 
     const afterBalance = await ethers.provider.getBalance(nft.address);
 
-    expect(afterBalance).to.eq(0);
+    expect(afterBalance).to.eq(balance.sub(1));
 
     //reverts
 
-    await expect(
-      nft.connect(otherAccount).withdraw(receivers)
-    ).to.be.revertedWith("Ownable: caller is not the owner");
+    await expect(nft.connect(otherAccount).withdraw(1)).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
   });
 
   it("approve nft", async function () {
