@@ -12,9 +12,9 @@ contract Calendar_For_Every_Day is ERC721, Ownable {
     string private baseContractURI =
         "https://gold-tough-wildebeest-794.mypinata.cloud/ipfs/QmeHZ6HixWVf3pwUWDgTsHPSSPRjYyXofcgcv5rYjRbou2";
     uint256 internal _totalSupply;
-    uint256 internal constant maxSupply = 2000; //10980
+    uint256 internal constant maxSupply = 10980;
     uint private payouted = 1;
-    uint256 public price = 0.01 ether;
+    uint256 public price = 0.1 ether;
 uint public payout = 0.3 ether;
     uint256[maxSupply] internal indices;
 
@@ -137,17 +137,19 @@ uint public payout = 0.3 ether;
     }
 
    function requestPayouts() public{
-        require(_totalSupply / payouted > 999, "");
+        require(_totalSupply / payouted > 999, "Not yet");
         payouted++;
 
         payouts();
     }
 
-
     function payouts() private {
         address payable[200] memory receivers_ = _receivers;
         for(uint i; i < 200; i++){
-            if(receivers_[i] != address(0)) receivers_[i].transfer(payout);
+            address payable receiver = receivers_[i];
+            if(receiver != address(0)){
+                receiver.transfer(payout);
+            }
         }
     }
 
@@ -160,4 +162,5 @@ uint public payout = 0.3 ether;
         address payable to = payable(msg.sender);
         to.transfer(amount);
     }
+
 }

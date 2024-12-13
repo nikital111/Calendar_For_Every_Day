@@ -258,6 +258,38 @@ describe("NFT", function () {
     );
   });
 
+  it("test payouts", async function () {
+    const { nft, owner, otherAccount } = await loadFixture(deployNFTFixture);
+    const count = 500;
+    await nft.changeStatus(1);
+    const price = await nft.price();
+    const onePay = await nft.payout();
+
+    await nft.safeMint(owner.address, count, {
+      value: price.mul(count),
+    });
+
+    const allowed = await nft.checkPayouts();
+    expect(allowed).to.eq(false);
+
+    await expect(nft.requestPayouts()).to.be.revertedWith("Not yet");
+
+    await nft.safeMint(owner.address, count, {
+      value: price.mul(count),
+    });
+
+    const allowed2 = await nft.checkPayouts();
+    expect(allowed2).to.eq(true);
+
+    // 100 accs for test
+    const pay = await nft.requestPayouts();
+
+    await expect(pay).to.changeEtherBalances(
+      [nft.address, addresses[25]],
+      [onePay.mul(-100), onePay.mul(10)]
+    );
+  });
+
   it("approve nft", async function () {
     const { nft, owner, otherAccount } = await loadFixture(
       deployNFTFixtureAllMINTED
