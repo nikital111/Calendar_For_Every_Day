@@ -15,7 +15,11 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
+
+    const myAddresses = [...addresses];
+    myAddresses[51] = owner.address;
+    myAddresses[199] = otherAccount.address;
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(myAddresses);
 
     await nft.deployed();
 
@@ -31,7 +35,10 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
+    const myAddresses = [...addresses];
+    myAddresses[51] = owner.address;
+    myAddresses[199] = otherAccount.address;
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(myAddresses);
 
     await nft.deployed();
 
@@ -49,7 +56,10 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
+    const myAddresses = [...addresses];
+    myAddresses[51] = owner.address;
+    myAddresses[199] = otherAccount.address;
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(myAddresses);
 
     await nft.deployed();
 
@@ -68,7 +78,10 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
+    const myAddresses = [...addresses];
+    myAddresses[51] = owner.address;
+    myAddresses[199] = otherAccount.address;
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(myAddresses);
 
     await nft.deployed();
 
@@ -91,7 +104,10 @@ describe("NFT", function () {
     const NFTFactory = await ethers.getContractFactory(
       "Calendar_For_Every_Day"
     );
-    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(addresses);
+    const myAddresses = [...addresses];
+    myAddresses[51] = owner.address;
+    myAddresses[199] = otherAccount.address;
+    const nft: Calendar_For_Every_Day = await NFTFactory.deploy(myAddresses);
 
     await nft.deployed();
 
@@ -269,24 +285,24 @@ describe("NFT", function () {
       value: price.mul(count),
     });
 
-    const allowed = await nft.checkPayouts();
+    const allowed = await nft.checkPayout();
     expect(allowed).to.eq(false);
 
-    await expect(nft.requestPayouts()).to.be.revertedWith("Not yet");
+    await expect(nft.requestPayout()).to.be.revertedWith("Not yet");
 
     await nft.safeMint(owner.address, count, {
       value: price.mul(count),
     });
 
-    const allowed2 = await nft.checkPayouts();
+    const allowed2 = await nft.checkPayout();
     expect(allowed2).to.eq(true);
 
     // 100 accs for test
-    const pay = await nft.requestPayouts();
+    const pay = await nft.requestPayout();
 
     await expect(pay).to.changeEtherBalances(
-      [nft.address, addresses[25]],
-      [onePay.mul(-100), onePay.mul(10)]
+      [nft.address, owner.address],
+      [-onePay, onePay]
     );
   });
 
