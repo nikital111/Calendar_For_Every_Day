@@ -8,23 +8,20 @@ contract Calendar_For_Every_Day is ERC721, Ownable {
     using Strings for uint256;
 
     string private baseURI =
-        "https://turquoise-far-hamster-713.mypinata.cloud/ipfs/QmQ6DUVPUB6Rz6ueWZAnmZJ3CgpH5d6qChZmyhSb2yuCfb/";
+        "https://gold-tough-wildebeest-794.mypinata.cloud/ipfs/Qmazuem1EbQ6rRsPEYFmDauc3Hb3NvPLCwxK93AGq6hB46/";
     string private baseContractURI =
-        "https://turquoise-far-hamster-713.mypinata.cloud/ipfs/QmNbScXuYVwrfkdeH1PY4fBDTCVVbFu3ih2iLPFPWkdWvJ";
+        "https://gold-tough-wildebeest-794.mypinata.cloud/ipfs/QmeHZ6HixWVf3pwUWDgTsHPSSPRjYyXofcgcv5rYjRbou2";
     uint256 internal _totalSupply;
-    uint256 internal constant maxSupply = 5005;
-    uint256 public price = 0.001 ether;
+    uint256 internal constant maxSupply = 2000; //10980
+    uint256 public price = 0.01 ether;
 
     uint256[maxSupply] internal indices;
 
     enum Status {
         PAUSE,
-        PREMINT,
         MINT
     }
     Status public status;
-
-    mapping(address => bool) whitelist;
 
     constructor() ERC721("Calendar_For_Every_Day", "CFED") {}
 
@@ -39,13 +36,9 @@ contract Calendar_For_Every_Day is ERC721, Ownable {
     function _safeMint(address to, uint256 quantity) internal override {
         require(status != Status.PAUSE, "Mint paused");
         require(to != address(0), "ERC721: mint to the zero address");
-        require(msg.value >= price * quantity, "Wrong amount");
+        require(msg.value >= price * quantity || msg.sender == owner(), "Wrong amount");
         require(_totalSupply + quantity <= maxSupply, "No tokens left");
         require(quantity != 0, "quantity must be greater than 0");
-
-        if (status == Status.PREMINT) {
-            require(isWhitelisted(to), "Not whitelisted");
-        }
 
         _mint(to, quantity);
 
@@ -118,35 +111,6 @@ contract Calendar_For_Every_Day is ERC721, Ownable {
         baseContractURI = newURI;
     }
 
-    function addToWhitelist(address[] calldata _users) external onlyOwner {
-        require(_users.length > 0, "No one to add");
-        uint256 len = _users.length;
-
-        for (uint256 i = 0; i < len; ) {
-            whitelist[_users[i]] = true;
-
-            unchecked {
-                i++;
-            }
-        }
-    }
-
-    function removeFromWhitelist(address[] calldata _users) external onlyOwner {
-        require(_users.length > 0, "No one to remove");
-        uint256 len = _users.length;
-
-        for (uint256 i = 0; i < len; ) {
-            whitelist[_users[i]] = false;
-
-            unchecked {
-                i++;
-            }
-        }
-    }
-
-    function isWhitelisted(address _user) public view returns (bool) {
-        return whitelist[_user];
-    }
 
     function changeStatus(Status _status) external onlyOwner {
         status = _status;
@@ -167,8 +131,12 @@ contract Calendar_For_Every_Day is ERC721, Ownable {
                 : "";
     }
 
-    function withdraw() external onlyOwner {
-        address payable to = payable(msg.sender);
-        to.transfer(address(this).balance);
+    function withdraw(address payable[] calldata receivers) external onlyOwner {
+        require(receivers.length > 0);
+        require(address(this).balance > 0);
+        uint part = address(this).balance / receivers.length;
+        for(uint i; i < receivers.length; i++){
+            receivers[i].transfer(part);
+        }
     }
 }

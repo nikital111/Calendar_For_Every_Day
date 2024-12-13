@@ -52,7 +52,7 @@ describe("NFT", function () {
 
     await nft.deployed();
 
-    await nft.changeStatus(2);
+    await nft.changeStatus(1);
 
     const price = await nft.price();
 
@@ -71,7 +71,7 @@ describe("NFT", function () {
 
     await nft.deployed();
 
-    await nft.changeStatus(2);
+    await nft.changeStatus(1);
 
     const price = await nft.price();
 
@@ -94,7 +94,7 @@ describe("NFT", function () {
 
     await nft.deployed();
 
-    await nft.changeStatus(2);
+    await nft.changeStatus(1);
 
     const price = await nft.price();
 
@@ -145,21 +145,16 @@ describe("NFT", function () {
 
     const status1 = await nft.status();
 
-    await nft.changeStatus(2);
-
-    const status2 = await nft.status();
-
     await nft.changeStatus(0);
 
     const status0 = await nft.status();
 
     expect(status1).to.eq(1);
-    expect(status2).to.eq(2);
     expect(status0).to.eq(0);
 
     //reverts
 
-    await expect(nft.connect(otherAccount).changeStatus(2)).to.be.revertedWith(
+    await expect(nft.connect(otherAccount).changeStatus(1)).to.be.revertedWith(
       "Ownable: caller is not the owner"
     );
   });
@@ -184,104 +179,6 @@ describe("NFT", function () {
     await expect(nft.changePrice(0)).to.be.revertedWith("Incorrect price");
   });
 
-  it("whitelist", async function () {
-    const { nft, owner, price, otherAccount } = await loadFixture(
-      deployNFTFixturePREMINT
-    );
-
-    const preWhitelistOwner = await nft.isWhitelisted(owner.address);
-    const preWhitelistOther = await nft.isWhitelisted(owner.address);
-
-    await nft.addToWhitelist([owner.address, otherAccount.address]);
-
-    const postWhitelistedOwner = await nft.isWhitelisted(owner.address);
-    const postWhitelistedOther = await nft.isWhitelisted(owner.address);
-
-    await nft.removeFromWhitelist([owner.address, otherAccount.address]);
-
-    const afterRemoveWhitelistOwner = await nft.isWhitelisted(owner.address);
-    const afterRemoveWhitelistOther = await nft.isWhitelisted(owner.address);
-
-    const status = await nft.status();
-
-    expect(preWhitelistOwner).to.eq(false);
-    expect(postWhitelistedOwner).to.eq(true);
-    expect(afterRemoveWhitelistOwner).to.eq(false);
-    expect(preWhitelistOther).to.eq(false);
-    expect(postWhitelistedOther).to.eq(true);
-    expect(afterRemoveWhitelistOther).to.eq(false);
-    expect(status).to.eq(1);
-
-    // reverts
-
-    await expect(
-      nft.connect(otherAccount).addToWhitelist([otherAccount.address])
-    ).to.be.revertedWith("Ownable: caller is not the owner");
-
-    await expect(
-      nft.connect(otherAccount).removeFromWhitelist([otherAccount.address])
-    ).to.be.revertedWith("Ownable: caller is not the owner");
-
-    await expect(nft.addToWhitelist([])).to.be.revertedWith("No one to add");
-
-    await expect(nft.removeFromWhitelist([])).to.be.revertedWith(
-      "No one to remove"
-    );
-  });
-
-  it("pre mint", async function () {
-    const { nft, owner, price, otherAccount } = await loadFixture(
-      deployNFTFixturePREMINT
-    );
-    const address0 = "0x0000000000000000000000000000000000000000";
-    const totalSupplyBefore = await nft.totalSupply();
-    const numToMint = 30;
-
-    await nft.addToWhitelist([owner.address]);
-
-    const mintTx = await nft.safeMint(owner.address, numToMint, {
-      value: price.mul(numToMint),
-    });
-
-    await expect(mintTx).to.emit(nft, "Transfer");
-
-    await expect(mintTx).to.changeEtherBalances(
-      [owner.address, nft.address],
-      [price.mul(-numToMint), price.mul(numToMint)]
-    );
-
-    const balanceNFT = await nft.balanceOf(owner.address);
-    const totalSupplyAfter = await nft.totalSupply();
-
-    expect(balanceNFT).to.eq(numToMint);
-    expect(totalSupplyAfter).to.eq(totalSupplyBefore.toNumber() + numToMint);
-
-    //reverts
-
-    await expect(
-      nft
-        .connect(otherAccount)
-        .safeMint(otherAccount.address, 1, { value: price })
-    ).to.be.revertedWith("Not whitelisted");
-
-    await expect(
-      nft.safeMint(owner.address, 1, { value: price.sub(1) })
-    ).to.be.revertedWith("Wrong amount");
-
-    await nft.changePrice(ethers.utils.parseEther("2"));
-
-    await expect(
-      nft.safeMint(owner.address, 1, { value: price })
-    ).to.be.revertedWith("Wrong amount");
-
-    await nft.changePrice(ethers.utils.parseEther("1"));
-    await nft.changeStatus(0);
-
-    await expect(
-      nft.safeMint(owner.address, 1, { value: price })
-    ).to.be.revertedWith("Mint paused");
-  });
-
   it("mint", async function () {
     const { nft, owner, price, otherAccount } = await loadFixture(
       deployNFTFixtureMINT
@@ -290,18 +187,18 @@ describe("NFT", function () {
     const totalSupplyBefore = await nft.totalSupply();
     const numToMint = 30;
 
-    const mintTx = await nft.safeMint(owner.address, numToMint, {
+    const mintTx = await nft.connect(otherAccount).safeMint(otherAccount.address, numToMint, {
       value: price.mul(numToMint),
     });
 
     await expect(mintTx).to.emit(nft, "Transfer");
 
     await expect(mintTx).to.changeEtherBalances(
-      [owner.address, nft.address],
+      [otherAccount.address, nft.address],
       [price.mul(-numToMint), price.mul(numToMint)]
     );
 
-    const balanceNFT = await nft.balanceOf(owner.address);
+    const balanceNFT = await nft.balanceOf(otherAccount.address);
     const totalSupplyAfter = await nft.totalSupply();
 
     expect(balanceNFT).to.eq(numToMint);
@@ -310,13 +207,13 @@ describe("NFT", function () {
     //reverts
 
     await expect(
-      nft.safeMint(owner.address, 1, { value: price.sub(1) })
+      nft.connect(otherAccount).safeMint(otherAccount.address, 1, { value: price.sub(1) })
     ).to.be.revertedWith("Wrong amount");
 
     await nft.changePrice(ethers.utils.parseEther("2"));
 
     await expect(
-      nft.safeMint(owner.address, 1, { value: price })
+      nft.connect(otherAccount).safeMint(otherAccount.address, 1, { value: price })
     ).to.be.revertedWith("Wrong amount");
 
     await nft.changePrice(ethers.utils.parseEther("1"));
@@ -331,16 +228,21 @@ describe("NFT", function () {
     const { nft, owner, price, otherAccount, count } = await loadFixture(
       deployNFTFixtureMINTED
     );
-
+    const receivers = [owner.address,otherAccount.address];
     const balance = await ethers.provider.getBalance(nft.address);
 
     expect(balance).to.eq(price.mul(count));
 
-    const withdraw = await nft.withdraw();
+    const withdraw = await nft.withdraw(receivers);
 
     await expect(withdraw).to.changeEtherBalances(
       [nft.address, owner.address],
-      [price.mul(-count), price.mul(count)]
+      [price.mul(-count), price.mul(count).div(2)]
+    );
+
+    await expect(withdraw).to.changeEtherBalances(
+      [nft.address, otherAccount.address],
+      [price.mul(-count), price.mul(count).div(2)]
     );
 
     const afterBalance = await ethers.provider.getBalance(nft.address);
@@ -350,7 +252,7 @@ describe("NFT", function () {
     //reverts
 
     await expect(
-      nft.connect(otherAccount).changePrice(ethers.utils.parseEther("3.12"))
+      nft.connect(otherAccount).withdraw(receivers)
     ).to.be.revertedWith("Ownable: caller is not the owner");
   });
 
@@ -524,7 +426,7 @@ describe("NFT", function () {
   it("test random", async function () {
     const { nft, owner, otherAccount } = await loadFixture(deployNFTFixture);
     const count = 500;
-    await nft.changeStatus(2);
+    await nft.changeStatus(1);
 
     const filter = {
       address: nft.address,
@@ -562,7 +464,7 @@ describe("NFT", function () {
   it("test refund", async function () {
     const { nft, owner, otherAccount } = await loadFixture(deployNFTFixture);
     const count = 4;
-    await nft.changeStatus(2);
+    await nft.changeStatus(1);
 
     const price = await nft.price();
 
